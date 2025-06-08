@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <title>Frankenmath Demo</title>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+      defer
+    ></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css" />
+    <script src="index.js" type="module"></script>
+  </head>
+  <body>
+    <h1>Frankenmath Demo</h1>
+
+    <label for="mathInput" class="label">Enter custom math expression:</label>
+    <textarea
+      id="mathInput"
+      placeholder="Type your custom math expression..."
+    ></textarea>
+
+    <div class="output-block">
+      <div class="label">Rendered LaTeX:</div>
+      <div id="tex-output">(rendered LaTeX will appear here)</div>
+    </div>
+
+    <div class="output-block">
+      <div class="label">CAS Output:</div>
+      <div id="cas-output">(CAS notation will appear here)</div>
+    </div>
+  </body>
+</html>

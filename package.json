@@ -1,0 +1,18 @@
+{
+  "name": "frankenmath",
+  "version": "0.0.0",
+  "description": "A js utility that uses two parsers to convert a string of custom mathematical notation and converts it to latex for real time rendering, and semantic output suitable for input to a CAS for evaluation.",
+  "main": "src/index.js",
+  "scripts": {
+    "build": "npm run build:cas && npm run build:tex",
+    "build:cas": "peggy --cache --format es -o src/cas.js src/cas.peggy",
+    "build:tex": "peggy --cache --format es -o src/tex.js src/tex.peggy"
+  },
+  "keywords": ["parsing","math","latex","CAS"],
+  "author": "Ken Monks",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "peggy": "^5.0.3"
+  }
+}
