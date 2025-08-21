@@ -2,7 +2,7 @@
 
 A javascript utility that allows you to convert expressions written in a simple mathematical language (under development) into two forms: LaTeX source code for formatting, and semantic input suitable as input to a CAS.
 
-- [Try it](https://kenmonks.github.io/frankenmath) - in a live demo.
+- [Try it](https://kenmonks.github.io/franken-math) - in a live demo.
 
 This is currently under development.
 
