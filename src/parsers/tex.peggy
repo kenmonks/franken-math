@@ -100,6 +100,12 @@
     return `\\displaystyle\\sum_{${k}=${a}}^{${b}} ${f}`
   }
 
+  // convert summations to tex
+  const integral = (f,x,a,b) => {
+    if (a) return `\\displaystyle\\int_{${a}}^{${b}} ${f}\\,\\mathrm{d}${x}`
+    return `\\displaystyle\\int ${f}\\,\\mathrm{d}${x}`
+  }
+
   // convert indexed union to tex
   const union = (f,k,a) => {
     return `\\displaystyle\\bigcup_{${k}\\in ${a}} ${f}`
@@ -121,6 +127,9 @@
     // of a \frac, depending on whether the next factor is a reciprocal
     let latest = term.shift()
     let ans = ''
+    // treat a leading negative sign as subtraction, not negation
+    const subtract = latest.startsWith('-')
+    if (subtract) latest = latest.slice(1)
     while (term.length>0) {
       // get the next factor
       let next = term.shift()
@@ -144,6 +153,8 @@
     }
     // no more factors, so just cat the latest
     ans += (ans.length>0) ? `\\cdot ${latest}` : latest
+    // return the leading - if necessary
+    if (subtract) ans = '-'+ans
     return ans
   }
   // instead of making a separate parsing class for each symbol we want
@@ -177,7 +188,7 @@
       Fib     : 'F'         , by       : '\\text{ by }' , pie       : '🥧'           ,
       basket  : '🧺'        , tree     : '🌳'           , apple      : '🍎'           ,
       cherry  : '🍒'        , blueberry: '🫐'           , star       : '\\star'       ,
-      infty   : '\\infty'   , infinity : '\\infty'     ,
+      infty   : '\\infty'   , infinity : '\\infty'     , inf        : '\\infty'      ,
       iff                 : '\\Leftrightarrow'             ,
       contradiction       : '\\rightarrow\\leftarrow'      ,
       equivalenceRelation : '\\text{equivalence relation}' ,
@@ -529,7 +540,7 @@ Comment = ( '%' / 'Comment'i ) __ a:StringLiteral
 
 // A string literal is anything enclosed in double quotes
 // Currently only used for comments
-StringLiteral = $('"' [^"]* '"')
+StringLiteral = '"' a:([^"]*) '"' { return `\\text{${a.join('')}}` }
 // Labels
 Label = 'label'i _ [(\[{"] _ a:([^)\]}"]+) _ [)\]}"]
   { return `\\text{\\textcolor{grey}{${a.join('')}}}` }
@@ -768,7 +779,7 @@ Set = RelativeComp
 // Once again, Algebraic only has to point to the lowest precedence operator
 // that inherits the ones below it (but Choose does not). Atomic is passed up
 // the chain from Exp.
-Algebraic = Choose / Sum / Summation / IndexedUnion / IndexedIntersect / Product
+Algebraic = Choose / Sum / Summation / Integral / IndexedUnion / IndexedIntersect / Product
 
   // we make this lower precedence that sums so e.g. 'n+1 choose k' can be
   // entered without parentheses
@@ -785,22 +796,58 @@ Algebraic = Choose / Sum / Summation / IndexedUnion / IndexedIntersect / Product
   // k to n of f(k) + sum k to n of g(k)' will be the sum of the two summations,
   // rather than a single summation where the second one is part of the summands
   // of the first.
-  Summation = 'sum'i __ k:Symbol __ a:('from' __ @Product __)? 'to'i __ b:Product
+  Summation = 'sum'i __ k:Symbol __ a:('from' __ @Algebraic __)? 'to'i __ b:Algebraic
               __ ('of'i __)? f:Product
                   { return summation(f,k,a,b) }  /
 
-              'sum'i __ k:Symbol _ '=' _ a:Product __ 'to'i __ b:Product
+              'sum'i __ k:Symbol _ '=' _ a:Algebraic __ 'to'i __ b:Algebraic
               __ ('of'i __)? f:Product
                   { return summation(f,k,a,b) }  /
 
               'sum'i __ ('of'i __)? f:Product __
               ('as'i __ / 'for'i__) k:Symbol __ ('goes'i __)?
-              a:('from' __ @Product __)? 'to'i __ b:Product
+              a:('from' __ @Algebraic __)? 'to'i __ b:Algebraic
                   { return summation(f,k,a,b) }  /
 
               'sum'i '(' _ f:Product comma
-                           k:Symbol comma a:(@Product comma)? b:Product _ ')'
+                           k:Symbol comma a:(@Algebraic comma)? b:Algebraic _ ')'
                   { return summation(f,k,a,b) }
+  
+  // definite integrals are similar to summations, but we don't have to fuss about 
+  // their precedence relative to addition because they have a closing delimiter
+  Integral = 'int'i __ x:Symbol _ '=' _ a:Algebraic __ 'to'i __ b:Algebraic
+              __ ('of'i __)? f:Algebraic
+                  { return integral(f,x,a,b) }  / 
+
+              'int'i __ x:Symbol __ a:('from' __ @Algebraic __)? 'to'i __ b:Algebraic
+              __ ('of'i __)? f:Product
+                  { return integral(f,x,a,b) }  /  
+
+              'int'i __ ('of'i __)? f:Algebraic 
+              __ ('as'i __ / 'for'i__) x:Symbol __ ('goes'i __)? 
+              a:('from' __ @Algebraic __)? 'to'i __ b:Algebraic
+                  { return integral(f,x,a,b) }  /
+
+              'int'i '(' _ f:Algebraic comma 
+              x:Symbol comma a:(@Algebraic comma)? b:Algebraic _ ')'
+                  { return integral(f,x,a,b) }  /
+              
+              // antiderivatives (indefinite integrals)
+
+              'int'i __ ('with'i __ 'respect'i __ 'to'i / 'wrt'i ) __ x:Symbol 
+              __ ('of'i __)? f:Algebraic
+                  { return integral(f,x) }  / 
+
+              'int'i __ ('of'i __)? f:Algebraic 
+              __ ('with'i __ 'respect'i __ 'to'i / 'wrt'i) __ x:Symbol 
+                  { return integral(f,x) }  /
+
+              'int'i '(' _ f:Algebraic comma x:Symbol _ ')'
+                  { return integral(f,x) } /
+
+              'int'i __ f:Algebraic __ 'd' x:Symbol
+                  { return integral(f,x) }
+
 
     Product   = a:(Denom/Negated/ExpArgs)
                 |1..,(_'⋅'_/_'cdot'_x/_'*'_)|
@@ -935,7 +982,7 @@ Prefix =  // LDE EFA's first
 // Atomic Expressions
 //
 // morally atomic expressions (do not require parentheses)
-Atomic = Parenthesized / // EquivalenceClass
+Atomic = Parenthesized / StringLiteral / // EquivalenceClass
          Matrix / Tuple / SetBracketed / Symbol / Number
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -955,9 +1002,10 @@ Matrix = '['_ a:Tuple|..,comma| _']' !alphanum
               s.replace(/,/g, ' & ')
                .replace(/\\left\\langle{|}\\right\\rangle/g,''))
              .join(' \\\\\n ')}\n\\end{matrix}\\right]` }
-// tuples
-Tuple = '['_ a:ExpressionSeq _']'!alphanum
-        { return `\\left\\langle{${a}}\\right\\rangle` } /
+// tuples (for AiM it's just stuff between LR brackets other than sets)
+// e.g. interval notation like [2,inf)
+Tuple =  L:[\[\(] _ a:ExpressionSeq _ R:[\]\)] !alphanum
+        { return `\\left${L} ${a} \\right${R}` } /
         'langle'_x a:ExpressionSeq _'rangle'!alphanum
         { return `\\left\\langle{${a}}\\right\\rangle` }
 // sets
@@ -975,8 +1023,10 @@ Parenthesized = '(' _ a:(Choose/Multinomial/Prefix) _ ')' { return a  } /
 ///////////////////////////////////////////////////////////////////////////////
 // Numbers
 // (negatives and fractions are compound)
-Number  = Decimal / Natural
-Decimal = $( Natural '.' [0-9]+ )
+Number  = RepeatingDecimal / Decimal / Natural
+RepeatingDecimal = a:Decimal '[' b:[0-9]+ ']' 
+                   { return `${a}\\overline{${b.join('')}}`}
+Decimal = $( Natural '.' [0-9]* ) 
 Natural = $( [1-9][0-9]* / '0' )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -989,9 +1039,9 @@ Natural = $( [1-9][0-9]* / '0' )
 // For clarity in reading the putdown output we rename some special frequently used
 // symbols.
 Symbol "Symbol" =  a:('contradiction' / '✔︎' / '✗' / '⁉︎' / '~' ) { return texsymbol(a) } /
-  !(ReservedWord !alphanum) a:([a-z]i alphanum* )
-  { let b = texsymbol(a[0]+a[1].join(''))
-    return (b.length>1 && !b.startsWith('\\')) ? `\\text{${b}}` : b }
+  StringLiteral / !(ReservedWord !alphanum) a:[a-zA-Z]+
+  { let b = texsymbol(a.join(''))
+    return (b.length>1) ? `\\mathrm{${b}}` : b }
 
 // Reserved Words
 //
