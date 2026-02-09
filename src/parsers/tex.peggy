@@ -956,6 +956,9 @@ Prefix =  // LDE EFA's first
           // format sqrt appropriately
           'sqrt('i _ a:ExpressionSeq _ ')'
             { return `\\sqrt{${a}}` } /
+          // format 'abs' as | | 
+          'abs(' _ b:ExpressionSeq _ ')'
+            { return `\\left| ${b} \\right|` } /
           // allow 'class' to be case insensitive (one or two args)
           'class('i _ a:Expression _')'  { return `\\left[${a}\\right]` } /
           'class('i _ a:Expression comma b:Expression')'
@@ -982,7 +985,7 @@ Prefix =  // LDE EFA's first
 // Atomic Expressions
 //
 // morally atomic expressions (do not require parentheses)
-Atomic = Parenthesized / StringLiteral / // EquivalenceClass
+Atomic = Parenthesized / StringLiteral / 
          Matrix / Tuple / SetBracketed / Symbol / Number
 
 ///////////////////////////////////////////////////////////////////////////////
