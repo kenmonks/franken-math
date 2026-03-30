@@ -164,8 +164,8 @@
       sigma   : '\\sigma'   , 'σ'      : '\\sigma'     , alpha      : '\\alpha'      ,
       nu      : '\\nu'      , beta     : '\\beta'      , xi         : '\\xi'         ,
       Xi      : '\\Xi'      , gamma    : '\\gamma'     , Gamma      : '\\Gamma'      ,
-      delta   : '\\delta'   , Delta    : '\\Delta'     , pi         : '\\pi'         ,
-      Pi      : '\\Pi'      , epsilon  : '\\epsilon'   , varepsilon : '\\varepsilon' ,
+      delta   : '\\delta'   , Delta    : '\\Delta'     , 
+      Pi      : '\\pi'      , epsilon  : '\\epsilon'   , varepsilon : '\\varepsilon' ,
       rho     : '\\rho'     , varrho   : '\\varrho'    , zeta       : '\\zeta'       ,
       Sigma   : '\\Sigma'   , eta      : '\\eta'       , tau        : '\\tau'        ,
       theta   : '\\theta'   , vartheta : '\\vartheta'  , Theta      : '\\Theta'      ,
@@ -1041,10 +1041,12 @@ Natural = $( [1-9][0-9]* / '0' )
 //
 // For clarity in reading the putdown output we rename some special frequently used
 // symbols.
-Symbol "Symbol" =  a:('contradiction' / '✔︎' / '✗' / '⁉︎' / '~' ) { return texsymbol(a) } /
-  StringLiteral / !(ReservedWord !alphanum) a:[a-zA-Z]+
-  { let b = texsymbol(a.join(''))
-    return (b.length>1) ? `\\mathrm{${b}}` : b }
+Symbol "Symbol" = 
+  a:('contradiction' / '✔︎' / '✗' / '⁉︎' / '~' ) { return texsymbol(a) } /
+  StringLiteral / 
+  !((ReservedWord / 'pi' / 'PI' / 'pI' ) !alphanum) a:[a-zA-Z]+
+    { let b = texsymbol(a.join(''))
+      return (b.length>1) ? `\\mathrm{${b}}` : b } 
 
 // Reserved Words
 //
@@ -1071,7 +1073,7 @@ ChainOp  = ( '='        { return '='} /        // can have any whitespace on eit
 // alphanum checks for a nonalphanumeric character without consuming any input.  It
 // is useful for checking for the end of reserved words and classes that end
 // with a word
-alphanum = [a-z0-9]i
+alphanum = [A-Za-z0-9]
 
 // We frequently want to allow optional spacing before or after a reserved word.
 // We might need to consume the space, but if there is no space there we need to
