@@ -164,7 +164,7 @@
       sigma   : '\\sigma'   , 'σ'      : '\\sigma'     , alpha      : '\\alpha'      ,
       nu      : '\\nu'      , beta     : '\\beta'      , xi         : '\\xi'         ,
       Xi      : '\\Xi'      , gamma    : '\\gamma'     , Gamma      : '\\Gamma'      ,
-      delta   : '\\delta'   , Delta    : '\\Delta'     , 
+      delta   : '\\delta'   , Delta    : '\\Delta'     , pi         : '\\pi'         ,
       Pi      : '\\pi'      , epsilon  : '\\epsilon'   , varepsilon : '\\varepsilon' ,
       rho     : '\\rho'     , varrho   : '\\varrho'    , zeta       : '\\zeta'       ,
       Sigma   : '\\Sigma'   , eta      : '\\eta'       , tau        : '\\tau'        ,
@@ -942,6 +942,11 @@ Prefix =  // LDE EFA's first
           // making the function name in mathcal or some other font.
           '@' a:[a-z]i b:( '('_ @ExpressionSeq _')' )+
             { return `\\mathcal{${a}}\\left(${b}\\right)` } /
+          // maple format for summations
+          'Sum'i '(' _ f:Algebraic comma
+                       k:Symbol _ '=' _ a:Algebraic _ '.''.'+ _ b:Algebraic _ ')'
+                  { return summation(f,k,a,b) } /
+  
           // allow 'set' to be case insensitive, check for setbuilder before
           // finite sets
           'set('i _ a:Symbol _ ':' _ b:Expression _')'
@@ -1029,7 +1034,7 @@ Parenthesized = '(' _ a:(Choose/Multinomial/Prefix) _ ')' { return a  } /
 Number  = RepeatingDecimal / Decimal / Natural
 RepeatingDecimal = a:Decimal '[' b:[0-9]+ ']' 
                    { return `${a}\\overline{${b.join('')}}`}
-Decimal = $( Natural '.' [0-9]* ) 
+Decimal = $( Natural '.' !'.' [0-9]* ) 
 Natural = $( [1-9][0-9]* / '0' )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1044,7 +1049,7 @@ Natural = $( [1-9][0-9]* / '0' )
 Symbol "Symbol" = 
   a:('contradiction' / '✔︎' / '✗' / '⁉︎' / '~' ) { return texsymbol(a) } /
   StringLiteral / 
-  !((ReservedWord / 'pi' / 'PI' / 'pI' ) !alphanum) a:[a-zA-Z]+
+  !((ReservedWord / 'pi' /  'PI' / 'pI' ) !alphanum) a:[a-zA-Z]+
     { let b = texsymbol(a.join(''))
       return (b.length>1) ? `\\mathrm{${b}}` : b } 
 
